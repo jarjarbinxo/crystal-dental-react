@@ -19,29 +19,40 @@ function CrystalCanvas() {
     resize();
     window.addEventListener('resize', resize, { passive: true });
 
-    function drawCrystal(cx, cy, r, rot) {
-      const pts = 8, inner = r * 0.42;
+    // Outer sun/star silhouette — wide pointed rays like the actual crystal shape
+    function drawSunStar(cx, cy, r, rot) {
+      const n = 16; // 16 rays
+      const outer = r;
+      const inner = r * 0.68;
       ctx.beginPath();
-      for (let i = 0; i < pts * 2; i++) {
-        const angle = (i * Math.PI / pts) + rot;
-        const radius = i % 2 === 0 ? r : inner;
-        const x = cx + Math.cos(angle) * radius;
-        const y = cy + Math.sin(angle) * radius;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      for (let i = 0; i < n * 2; i++) {
+        const angle = (i * Math.PI / n) + rot;
+        const radius = i % 2 === 0 ? outer : inner;
+        ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
       }
       ctx.closePath();
     }
 
-    function drawDetail(cx, cy, r, rot) {
-      const arm = r * 0.55, w = r * 0.18;
+    // Inner lattice grid of blocks (the 3D crosshatch from the image)
+    function drawLattice(cx, cy, r, rot) {
+      const blockSize = r * 0.14;
+      const gap       = r * 0.04;
+      const step      = blockSize + gap;
+      // Diamond arrangement: Manhattan distance ≤ radius
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.rotate(rot);
-      ctx.fillRect(-arm, -w / 2, arm * 2, w);
-      ctx.fillRect(-w / 2, -arm, w, arm * 2);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillRect(-arm * 0.7, -w * 0.4, arm * 1.4, w * 0.8);
-      ctx.fillRect(-w * 0.4, -arm * 0.7, w * 0.8, arm * 1.4);
+      ctx.rotate(rot + Math.PI / 4);
+      for (let gi = -3; gi <= 3; gi++) {
+        for (let gj = -3; gj <= 3; gj++) {
+          if (Math.abs(gi) + Math.abs(gj) <= 3) {
+            ctx.fillRect(
+              gi * step - blockSize / 2,
+              gj * step - blockSize / 2,
+              blockSize, blockSize
+            );
+          }
+        }
+      }
       ctx.restore();
     }
 
@@ -49,14 +60,14 @@ function CrystalCanvas() {
     const particles = Array.from({ length: N }, () => ({
       x:      Math.random(),
       y:      Math.random(),
-      r:      18 + Math.random() * 38,
+      r:      22 + Math.random() * 44,
       rot:    Math.random() * Math.PI * 2,
-      rotSpd: (Math.random() - 0.5) * 0.008,
-      dx:     (Math.random() - 0.5) * 0.00015,
-      dy:    -0.00006 - Math.random() * 0.00012,
+      rotSpd: (Math.random() - 0.5) * 0.007,
+      dx:     (Math.random() - 0.5) * 0.00012,
+      dy:    -0.00005 - Math.random() * 0.0001,
       phase:  Math.random() * Math.PI * 2,
       spd:    0.4 + Math.random() * 0.6,
-      alpha:  0.06 + Math.random() * 0.12,
+      alpha:  0.18 + Math.random() * 0.22,  // much more visible
     }));
 
     let tick = 0;
@@ -67,38 +78,51 @@ function CrystalCanvas() {
       ctx.clearRect(0, 0, W, H);
 
       particles.forEach(p => {
-        const floatY = Math.sin(tick * p.spd + p.phase) * 0.018;
+        const floatY = Math.sin(tick * p.spd + p.phase) * 0.016;
         const px = ((p.x + p.dx * tick * 60) % 1 + 1) % 1;
         const py = ((p.y + p.dy * tick * 60 + floatY) % 1 + 1) % 1;
-        const cx = px * W, cy = py * H;
+        const cx = px * W;
+        const cy = py * H;
         const r  = p.r * (W / 1440);
         p.rot += p.rotSpd;
 
+        // Soft shadow/glow behind
         ctx.save();
-        ctx.globalAlpha = p.alpha * 0.35;
-        drawCrystal(cx + r * 0.12, cy + r * 0.18, r, p.rot);
-        ctx.fillStyle = 'rgba(180,100,0,0.6)';
+        ctx.globalAlpha = p.alpha * 0.3;
+        drawSunStar(cx + r * 0.1, cy + r * 0.15, r, p.rot);
+        ctx.fillStyle = 'rgba(160,80,0,0.7)';
         ctx.fill();
         ctx.restore();
 
-        const grad = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.2, 0, cx, cy, r);
-        grad.addColorStop(0,    '#FFE066');
-        grad.addColorStop(0.4,  '#F5B800');
-        grad.addColorStop(0.75, '#E08800');
-        grad.addColorStop(1,    '#C06800');
+        // Gold radial gradient fill — outer star
+        const grad = ctx.createRadialGradient(cx - r * 0.25, cy - r * 0.25, 0, cx, cy, r);
+        grad.addColorStop(0,    '#FFF0A0');
+        grad.addColorStop(0.3,  '#FFD740');
+        grad.addColorStop(0.65, '#F5A800');
+        grad.addColorStop(1,    '#C06000');
 
         ctx.save();
         ctx.globalAlpha = p.alpha;
-        drawCrystal(cx, cy, r, p.rot);
+        drawSunStar(cx, cy, r, p.rot);
         ctx.fillStyle = grad;
         ctx.fill();
-        drawCrystal(cx, cy, r, p.rot);
-        ctx.strokeStyle = 'rgba(255,240,100,0.5)';
-        ctx.lineWidth = r * 0.06;
+        // Rim highlight
+        drawSunStar(cx, cy, r, p.rot);
+        ctx.strokeStyle = 'rgba(255,250,160,0.55)';
+        ctx.lineWidth = r * 0.045;
         ctx.stroke();
-        ctx.globalAlpha = p.alpha * 0.45;
-        ctx.fillStyle = 'rgba(200,130,0,0.9)';
-        drawDetail(cx, cy, r, p.rot);
+        ctx.restore();
+
+        // Inner lattice blocks — slightly darker gold
+        const bGrad = ctx.createRadialGradient(cx - r * 0.15, cy - r * 0.15, 0, cx, cy, r * 0.55);
+        bGrad.addColorStop(0,   '#FFE566');
+        bGrad.addColorStop(0.5, '#E09400');
+        bGrad.addColorStop(1,   '#A05800');
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha * 0.85;
+        ctx.fillStyle = bGrad;
+        drawLattice(cx, cy, r, p.rot);
         ctx.restore();
       });
     }
@@ -113,7 +137,7 @@ function CrystalCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:1 }}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}
     />
   );
 }
@@ -124,13 +148,13 @@ export default function Hero() {
 
   return (
     <section className="hero" dir={isAr ? 'rtl' : 'ltr'}>
-      {/* SoftAurora background — subtle dental palette */}
+      {/* SoftAurora — dental palette, more visible */}
       <div className="hero-aurora">
         <SoftAurora
           color1="#FFD6E8"
           color2="#B5C8FF"
           speed={0.35}
-          brightness={0.14}
+          brightness={0.42}
           scale={1.8}
           bandHeight={0.5}
           bandSpread={1.2}
@@ -141,10 +165,10 @@ export default function Hero() {
         />
       </div>
 
-      {/* Golden crystal particles */}
+      {/* Golden crystal lattice particles */}
       <CrystalCanvas />
 
-      <div className="hero-content" style={{ position:'relative', zIndex:2 }}>
+      <div className="hero-content" style={{ position: 'relative', zIndex: 2 }}>
         <div className="hero-badge">
           {t(lang, 'Crystal Tower, 8th Floor · Kuwait', 'برج كريستال، الطابق الثامن · الكويت')}
         </div>

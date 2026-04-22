@@ -3,82 +3,124 @@ import SoftAurora from './lib/SoftAurora';
 import BlurText from './lib/BlurText';
 import { useLang, t } from '../lang';
 
+// Gradient palette pulled from the Crystal Dental logo ring
+const COLORS = [
+  { r: 255, g: 139, b: 21  },  // orange
+  { r: 229, g: 25,  b: 125 },  // pink
+  { r: 139, g: 36,  b: 170 },  // purple
+  { r: 25,  g: 118, b: 210 },  // blue
+  { r: 0,   g: 172, b: 193 },  // teal
+  { r: 67,  g: 160, b: 71  },  // green
+];
+
+function rgba(c, a) { return `rgba(${c.r},${c.g},${c.b},${a})`; }
+
+// ── Clean incisor tooth silhouette ───────────────────────────────────────────
+function drawTooth(ctx, cx, cy, r, rot) {
+  const w = r * 0.58;
+  const h = r;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rot);
+  ctx.beginPath();
+  // Crown — three gentle mamelons along the top edge
+  ctx.moveTo(-w / 2, -h * 0.08);
+  ctx.bezierCurveTo(-w / 2, -h * 0.42, -w * 0.38, -h * 0.52, -w * 0.2, -h * 0.52);
+  ctx.bezierCurveTo(-w * 0.12, -h * 0.54, -w * 0.06, -h * 0.58, 0, -h * 0.52);
+  ctx.bezierCurveTo( w * 0.06, -h * 0.58,  w * 0.12, -h * 0.54,  w * 0.2, -h * 0.52);
+  ctx.bezierCurveTo( w * 0.38, -h * 0.52,  w / 2, -h * 0.42,  w / 2, -h * 0.08);
+  // Root — tapers to a rounded point
+  ctx.bezierCurveTo( w / 2,  h * 0.22,  w * 0.26,  h * 0.52, 0,  h * 0.52);
+  ctx.bezierCurveTo(-w * 0.26,  h * 0.52, -w / 2,  h * 0.22, -w / 2, -h * 0.08);
+  ctx.closePath();
+  ctx.restore();
+}
+
+// ── Wide molar with two cusps ────────────────────────────────────────────────
+function drawMolar(ctx, cx, cy, r, rot) {
+  const w = r * 0.82;
+  const h = r * 0.88;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rot);
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, -h * 0.05);
+  // Left cusp
+  ctx.bezierCurveTo(-w / 2, -h * 0.38, -w * 0.38, -h * 0.5, -w * 0.22, -h * 0.5);
+  ctx.bezierCurveTo(-w * 0.14, -h * 0.52, -w * 0.06, -h * 0.46, 0, -h * 0.46);
+  // Right cusp
+  ctx.bezierCurveTo( w * 0.06, -h * 0.46,  w * 0.14, -h * 0.52,  w * 0.22, -h * 0.5);
+  ctx.bezierCurveTo( w * 0.38, -h * 0.5,   w / 2, -h * 0.38,  w / 2, -h * 0.05);
+  // Root base — flat and wide
+  ctx.bezierCurveTo( w / 2,  h * 0.28,  w * 0.32,  h * 0.5,  w * 0.12,  h * 0.5);
+  ctx.bezierCurveTo( w * 0.04,  h * 0.5, -w * 0.04,  h * 0.5, -w * 0.12,  h * 0.5);
+  ctx.bezierCurveTo(-w * 0.32,  h * 0.5, -w / 2,  h * 0.28, -w / 2, -h * 0.05);
+  ctx.closePath();
+  ctx.restore();
+}
+
+// ── 4-pointed sparkle ────────────────────────────────────────────────────────
+function drawSparkle(ctx, cx, cy, r, rot) {
+  const long  = r;
+  const short = r * 0.18;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rot);
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a   = i * Math.PI / 4;
+    const len = i % 2 === 0 ? long : short;
+    i === 0
+      ? ctx.moveTo(Math.cos(a) * len, Math.sin(a) * len)
+      : ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+  }
+  ctx.closePath();
+  ctx.restore();
+}
+
 function CrystalCanvas() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx    = canvas.getContext('2d');
     let animId;
 
     function resize() {
-      const dpr = Math.min(devicePixelRatio, 2);
+      const dpr    = Math.min(devicePixelRatio, 2);
       canvas.width  = canvas.offsetWidth  * dpr;
       canvas.height = canvas.offsetHeight * dpr;
     }
     resize();
     window.addEventListener('resize', resize, { passive: true });
 
-    // Outer sun/star silhouette — wide pointed rays like the actual crystal shape
-    function drawSunStar(cx, cy, r, rot) {
-      const n = 16; // 16 rays
-      const outer = r;
-      const inner = r * 0.68;
-      ctx.beginPath();
-      for (let i = 0; i < n * 2; i++) {
-        const angle = (i * Math.PI / n) + rot;
-        const radius = i % 2 === 0 ? outer : inner;
-        ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
-      }
-      ctx.closePath();
-    }
-
-    // Inner lattice grid of blocks (the 3D crosshatch from the image)
-    function drawLattice(cx, cy, r, rot) {
-      const blockSize = r * 0.14;
-      const gap       = r * 0.04;
-      const step      = blockSize + gap;
-      // Diamond arrangement: Manhattan distance ≤ radius
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(rot + Math.PI / 4);
-      for (let gi = -3; gi <= 3; gi++) {
-        for (let gj = -3; gj <= 3; gj++) {
-          if (Math.abs(gi) + Math.abs(gj) <= 3) {
-            ctx.fillRect(
-              gi * step - blockSize / 2,
-              gj * step - blockSize / 2,
-              blockSize, blockSize
-            );
-          }
-        }
-      }
-      ctx.restore();
-    }
-
-    const N = 14;
-    const particles = Array.from({ length: N }, () => ({
+    // Mix of teeth and sparkles
+    const TYPES = ['incisor', 'incisor', 'molar', 'incisor', 'sparkle', 'molar', 'sparkle', 'incisor'];
+    const N = 16;
+    const particles = Array.from({ length: N }, (_, i) => ({
+      type:   TYPES[i % TYPES.length],
       x:      Math.random(),
       y:      Math.random(),
-      r:      22 + Math.random() * 44,
+      r:      (i % 3 === 0 ? 28 : 18) + Math.random() * 24,
       rot:    Math.random() * Math.PI * 2,
-      rotSpd: (Math.random() - 0.5) * 0.007,
-      dx:     (Math.random() - 0.5) * 0.00012,
-      dy:    -0.00005 - Math.random() * 0.0001,
+      rotSpd: (Math.random() - 0.5) * 0.006,
+      dx:     (Math.random() - 0.5) * 0.00008,
+      dy:    -0.00004 - Math.random() * 0.00008,
       phase:  Math.random() * Math.PI * 2,
-      spd:    0.4 + Math.random() * 0.6,
-      alpha:  0.18 + Math.random() * 0.22,  // much more visible
+      spd:    0.35 + Math.random() * 0.5,
+      alpha:  0.14 + Math.random() * 0.18,
+      color:  COLORS[i % COLORS.length],
     }));
 
     let tick = 0;
     function frame() {
       animId = requestAnimationFrame(frame);
-      tick += 0.012;
+      tick += 0.01;
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
       particles.forEach(p => {
-        const floatY = Math.sin(tick * p.spd + p.phase) * 0.016;
+        const floatY = Math.sin(tick * p.spd + p.phase) * 0.014;
         const px = ((p.x + p.dx * tick * 60) % 1 + 1) % 1;
         const py = ((p.y + p.dy * tick * 60 + floatY) % 1 + 1) % 1;
         const cx = px * W;
@@ -86,44 +128,50 @@ function CrystalCanvas() {
         const r  = p.r * (W / 1440);
         p.rot += p.rotSpd;
 
-        // Soft shadow/glow behind
-        ctx.save();
-        ctx.globalAlpha = p.alpha * 0.3;
-        drawSunStar(cx + r * 0.1, cy + r * 0.15, r, p.rot);
-        ctx.fillStyle = 'rgba(160,80,0,0.7)';
-        ctx.fill();
-        ctx.restore();
+        const c = p.color;
 
-        // Gold radial gradient fill — outer star
-        const grad = ctx.createRadialGradient(cx - r * 0.25, cy - r * 0.25, 0, cx, cy, r);
-        grad.addColorStop(0,    '#FFF0A0');
-        grad.addColorStop(0.3,  '#FFD740');
-        grad.addColorStop(0.65, '#F5A800');
-        grad.addColorStop(1,    '#C06000');
+        if (p.type === 'sparkle') {
+          // Sparkle: bright filled with glow
+          ctx.save();
+          ctx.globalAlpha = p.alpha * 1.4;
+          drawSparkle(ctx, cx, cy, r * 0.7, p.rot);
+          ctx.fillStyle = rgba(c, 0.9);
+          ctx.fill();
+          ctx.globalAlpha = p.alpha * 0.4;
+          drawSparkle(ctx, cx, cy, r * 1.1, p.rot + 0.4);
+          ctx.fillStyle = rgba(c, 0.3);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          // Tooth: clean stroke outline with very light fill
+          const draw = p.type === 'molar' ? drawMolar : drawTooth;
 
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        drawSunStar(cx, cy, r, p.rot);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        // Rim highlight
-        drawSunStar(cx, cy, r, p.rot);
-        ctx.strokeStyle = 'rgba(255,250,160,0.55)';
-        ctx.lineWidth = r * 0.045;
-        ctx.stroke();
-        ctx.restore();
+          // Soft drop-shadow
+          ctx.save();
+          ctx.globalAlpha = p.alpha * 0.18;
+          draw(ctx, cx + r * 0.06, cy + r * 0.1, r, p.rot);
+          ctx.fillStyle = rgba(c, 0.6);
+          ctx.fill();
+          ctx.restore();
 
-        // Inner lattice blocks — slightly darker gold
-        const bGrad = ctx.createRadialGradient(cx - r * 0.15, cy - r * 0.15, 0, cx, cy, r * 0.55);
-        bGrad.addColorStop(0,   '#FFE566');
-        bGrad.addColorStop(0.5, '#E09400');
-        bGrad.addColorStop(1,   '#A05800');
+          // Light fill
+          ctx.save();
+          ctx.globalAlpha = p.alpha * 0.22;
+          draw(ctx, cx, cy, r, p.rot);
+          ctx.fillStyle = rgba(c, 0.5);
+          ctx.fill();
+          ctx.restore();
 
-        ctx.save();
-        ctx.globalAlpha = p.alpha * 0.85;
-        ctx.fillStyle = bGrad;
-        drawLattice(cx, cy, r, p.rot);
-        ctx.restore();
+          // Crisp stroke outline — the main visible element
+          ctx.save();
+          ctx.globalAlpha = p.alpha * 0.85;
+          draw(ctx, cx, cy, r, p.rot);
+          ctx.strokeStyle = rgba(c, 0.9);
+          ctx.lineWidth = Math.max(1, r * 0.055);
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+          ctx.restore();
+        }
       });
     }
     frame();
@@ -148,7 +196,6 @@ export default function Hero() {
 
   return (
     <section className="hero" dir={isAr ? 'rtl' : 'ltr'}>
-      {/* SoftAurora — dental palette, more visible */}
       <div className="hero-aurora">
         <SoftAurora
           color1="#FFD6E8"
@@ -165,7 +212,6 @@ export default function Hero() {
         />
       </div>
 
-      {/* Golden crystal lattice particles */}
       <CrystalCanvas />
 
       <div className="hero-content" style={{ position: 'relative', zIndex: 2 }}>

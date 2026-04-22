@@ -1,194 +1,7 @@
-import { useEffect, useRef } from 'react';
 import SoftAurora from './lib/SoftAurora';
 import BlurText from './lib/BlurText';
+import FloatingMessages from './FloatingMessages';
 import { useLang, t } from '../lang';
-
-// Gradient palette pulled from the Crystal Dental logo ring
-const COLORS = [
-  { r: 255, g: 139, b: 21  },  // orange
-  { r: 229, g: 25,  b: 125 },  // pink
-  { r: 139, g: 36,  b: 170 },  // purple
-  { r: 25,  g: 118, b: 210 },  // blue
-  { r: 0,   g: 172, b: 193 },  // teal
-  { r: 67,  g: 160, b: 71  },  // green
-];
-
-function rgba(c, a) { return `rgba(${c.r},${c.g},${c.b},${a})`; }
-
-// ── Clean incisor tooth silhouette ───────────────────────────────────────────
-function drawTooth(ctx, cx, cy, r, rot) {
-  const w = r * 0.58;
-  const h = r;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(rot);
-  ctx.beginPath();
-  // Crown — three gentle mamelons along the top edge
-  ctx.moveTo(-w / 2, -h * 0.08);
-  ctx.bezierCurveTo(-w / 2, -h * 0.42, -w * 0.38, -h * 0.52, -w * 0.2, -h * 0.52);
-  ctx.bezierCurveTo(-w * 0.12, -h * 0.54, -w * 0.06, -h * 0.58, 0, -h * 0.52);
-  ctx.bezierCurveTo( w * 0.06, -h * 0.58,  w * 0.12, -h * 0.54,  w * 0.2, -h * 0.52);
-  ctx.bezierCurveTo( w * 0.38, -h * 0.52,  w / 2, -h * 0.42,  w / 2, -h * 0.08);
-  // Root — tapers to a rounded point
-  ctx.bezierCurveTo( w / 2,  h * 0.22,  w * 0.26,  h * 0.52, 0,  h * 0.52);
-  ctx.bezierCurveTo(-w * 0.26,  h * 0.52, -w / 2,  h * 0.22, -w / 2, -h * 0.08);
-  ctx.closePath();
-  ctx.restore();
-}
-
-// ── Wide molar with two cusps ────────────────────────────────────────────────
-function drawMolar(ctx, cx, cy, r, rot) {
-  const w = r * 0.82;
-  const h = r * 0.88;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(rot);
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, -h * 0.05);
-  // Left cusp
-  ctx.bezierCurveTo(-w / 2, -h * 0.38, -w * 0.38, -h * 0.5, -w * 0.22, -h * 0.5);
-  ctx.bezierCurveTo(-w * 0.14, -h * 0.52, -w * 0.06, -h * 0.46, 0, -h * 0.46);
-  // Right cusp
-  ctx.bezierCurveTo( w * 0.06, -h * 0.46,  w * 0.14, -h * 0.52,  w * 0.22, -h * 0.5);
-  ctx.bezierCurveTo( w * 0.38, -h * 0.5,   w / 2, -h * 0.38,  w / 2, -h * 0.05);
-  // Root base — flat and wide
-  ctx.bezierCurveTo( w / 2,  h * 0.28,  w * 0.32,  h * 0.5,  w * 0.12,  h * 0.5);
-  ctx.bezierCurveTo( w * 0.04,  h * 0.5, -w * 0.04,  h * 0.5, -w * 0.12,  h * 0.5);
-  ctx.bezierCurveTo(-w * 0.32,  h * 0.5, -w / 2,  h * 0.28, -w / 2, -h * 0.05);
-  ctx.closePath();
-  ctx.restore();
-}
-
-// ── 4-pointed sparkle ────────────────────────────────────────────────────────
-function drawSparkle(ctx, cx, cy, r, rot) {
-  const long  = r;
-  const short = r * 0.18;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(rot);
-  ctx.beginPath();
-  for (let i = 0; i < 8; i++) {
-    const a   = i * Math.PI / 4;
-    const len = i % 2 === 0 ? long : short;
-    i === 0
-      ? ctx.moveTo(Math.cos(a) * len, Math.sin(a) * len)
-      : ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
-  }
-  ctx.closePath();
-  ctx.restore();
-}
-
-function CrystalCanvas() {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx    = canvas.getContext('2d');
-    let animId;
-
-    function resize() {
-      const dpr    = Math.min(devicePixelRatio, 2);
-      canvas.width  = canvas.offsetWidth  * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
-    }
-    resize();
-    window.addEventListener('resize', resize, { passive: true });
-
-    // Mix of teeth and sparkles
-    const TYPES = ['incisor', 'incisor', 'molar', 'incisor', 'sparkle', 'molar', 'sparkle', 'incisor'];
-    const N = 16;
-    const particles = Array.from({ length: N }, (_, i) => ({
-      type:   TYPES[i % TYPES.length],
-      x:      Math.random(),
-      y:      Math.random(),
-      r:      (i % 3 === 0 ? 28 : 18) + Math.random() * 24,
-      rot:    Math.random() * Math.PI * 2,
-      rotSpd: (Math.random() - 0.5) * 0.006,
-      dx:     (Math.random() - 0.5) * 0.00008,
-      dy:    -0.00004 - Math.random() * 0.00008,
-      phase:  Math.random() * Math.PI * 2,
-      spd:    0.35 + Math.random() * 0.5,
-      alpha:  0.14 + Math.random() * 0.18,
-      color:  COLORS[i % COLORS.length],
-    }));
-
-    let tick = 0;
-    function frame() {
-      animId = requestAnimationFrame(frame);
-      tick += 0.01;
-      const W = canvas.width, H = canvas.height;
-      ctx.clearRect(0, 0, W, H);
-
-      particles.forEach(p => {
-        const floatY = Math.sin(tick * p.spd + p.phase) * 0.014;
-        const px = ((p.x + p.dx * tick * 60) % 1 + 1) % 1;
-        const py = ((p.y + p.dy * tick * 60 + floatY) % 1 + 1) % 1;
-        const cx = px * W;
-        const cy = py * H;
-        const r  = p.r * (W / 1440);
-        p.rot += p.rotSpd;
-
-        const c = p.color;
-
-        if (p.type === 'sparkle') {
-          // Sparkle: bright filled with glow
-          ctx.save();
-          ctx.globalAlpha = p.alpha * 1.4;
-          drawSparkle(ctx, cx, cy, r * 0.7, p.rot);
-          ctx.fillStyle = rgba(c, 0.9);
-          ctx.fill();
-          ctx.globalAlpha = p.alpha * 0.4;
-          drawSparkle(ctx, cx, cy, r * 1.1, p.rot + 0.4);
-          ctx.fillStyle = rgba(c, 0.3);
-          ctx.fill();
-          ctx.restore();
-        } else {
-          // Tooth: clean stroke outline with very light fill
-          const draw = p.type === 'molar' ? drawMolar : drawTooth;
-
-          // Soft drop-shadow
-          ctx.save();
-          ctx.globalAlpha = p.alpha * 0.18;
-          draw(ctx, cx + r * 0.06, cy + r * 0.1, r, p.rot);
-          ctx.fillStyle = rgba(c, 0.6);
-          ctx.fill();
-          ctx.restore();
-
-          // Light fill
-          ctx.save();
-          ctx.globalAlpha = p.alpha * 0.22;
-          draw(ctx, cx, cy, r, p.rot);
-          ctx.fillStyle = rgba(c, 0.5);
-          ctx.fill();
-          ctx.restore();
-
-          // Crisp stroke outline — the main visible element
-          ctx.save();
-          ctx.globalAlpha = p.alpha * 0.85;
-          draw(ctx, cx, cy, r, p.rot);
-          ctx.strokeStyle = rgba(c, 0.9);
-          ctx.lineWidth = Math.max(1, r * 0.055);
-          ctx.lineJoin = 'round';
-          ctx.stroke();
-          ctx.restore();
-        }
-      });
-    }
-    frame();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}
-    />
-  );
-}
 
 export default function Hero() {
   const { lang } = useLang();
@@ -196,6 +9,7 @@ export default function Hero() {
 
   return (
     <section className="hero" dir={isAr ? 'rtl' : 'ltr'}>
+      {/* SoftAurora WebGL background */}
       <div className="hero-aurora">
         <SoftAurora
           color1="#FFD6E8"
@@ -212,7 +26,8 @@ export default function Hero() {
         />
       </div>
 
-      <CrystalCanvas />
+      {/* Floating WhatsApp testimonial bubbles */}
+      <FloatingMessages />
 
       <div className="hero-content" style={{ position: 'relative', zIndex: 2 }}>
         <div className="hero-badge">

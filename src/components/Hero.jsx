@@ -175,14 +175,14 @@ export default function Hero() {
 
         <h1 className="hero-h1" style={{ fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif" }}>
           <BlurText
-            text={t(lang, 'Your Smile,', 'ابتسامتك،')}
+            text={t(lang, 'Beautiful Smiles,', 'ابتسامة تستحقها،')}
             className="hero-line-1"
             delay={120}
             animateBy="words"
             direction="bottom"
           />
           <BlurText
-            text={t(lang, 'Perfected.', 'تكتمل.')}
+            text={t(lang, 'Crafted for You.', 'نصنعها لك.')}
             className="hero-line-2 grad-text"
             delay={120}
             animateBy="words"

@@ -103,12 +103,13 @@ export default function ComparisonSlider() {
         transition={{ duration: 0.65, delay: 0.22 }}
       >
         <div className="comparison-container" ref={compRef}>
-          <img className="comp-before" src="/before-teeth.jpg" alt="Before whitening" draggable="false"/>
+          {/* after = background (right), before = clip layer (left) so convention is always Before-left After-right */}
+          <img className="comp-before" src="/after-teeth.jpg" alt="After whitening" draggable="false"/>
           <div className="comp-after-wrap" ref={wrapRef}>
             <img
               className="comp-after"
-              src="/after-teeth.jpg"
-              alt="After whitening"
+              src="/before-teeth.jpg"
+              alt="Before whitening"
               draggable="false"
               style={{ width: compRef.current?.offsetWidth || '100%' }}
             />

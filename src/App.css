@@ -28,7 +28,8 @@ body{background:var(--white);color:var(--charcoal);font-family:'Jost',sans-serif
 .hero-aurora{position:absolute;inset:0;z-index:0;}
 .hero-aurora .soft-aurora-container{width:100%;height:100%;}
 .hero-content{max-width:640px;padding-top:88px;position:relative;z-index:2;}
-.hero-badge{display:inline-block;font-size:0.68rem;letter-spacing:0.26em;text-transform:uppercase;color:var(--gray);margin-bottom:22px;padding:6px 16px;border:1px solid var(--border);border-radius:20px;}
+.hero-badge{display:inline-block;font-size:0.68rem;letter-spacing:0.26em;text-transform:uppercase;color:var(--gray);margin-bottom:22px;padding:6px 16px;border:1px solid var(--border);border-radius:20px;white-space:nowrap;}
+[dir="rtl"] .hero-badge{letter-spacing:0;text-transform:none;font-size:0.78rem;}
 .hero-h1{margin-bottom:6px;}
 .hero-line-1{font-family:'Cormorant Garamond',serif!important;font-size:clamp(3rem,5.5vw,6rem);font-weight:300;color:var(--charcoal);line-height:1.06;letter-spacing:-0.02em;display:flex;flex-wrap:wrap;}
 .hero-line-2{font-family:'Cormorant Garamond',serif!important;font-size:clamp(3rem,5.5vw,6rem);font-weight:300;line-height:1.06;letter-spacing:-0.02em;display:flex;flex-wrap:wrap;font-style:italic;}

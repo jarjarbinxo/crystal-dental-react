@@ -175,9 +175,7 @@ footer::before{content:'';display:block;height:3px;background:var(--gradient);po
   100%{transform:translateY(-105vh) translateX(var(--drift,0px));opacity:0;}
 }
 
-/* REVEAL */
-.reveal{opacity:0;transform:translateY(24px);transition:opacity 0.65s ease,transform 0.65s ease;}
-.reveal.visible{opacity:1;transform:none;}
+/* reveal handled by Motion whileInView */
 
 /* RESPONSIVE */
 @media(max-width:960px){

@@ -1,7 +1,6 @@
-import { useRef } from 'react';
+import { motion } from 'motion/react';
 import SpotlightCard from './lib/SpotlightCard';
 import { useLang, t } from '../lang';
-import { useReveal } from '../hooks/useReveal';
 
 const SERVICES = [
   {
@@ -30,45 +29,60 @@ const SERVICES = [
   },
 ];
 
-function ServiceCard({ service, delay }) {
-  const ref = useRef(null);
-  const visible = useReveal(ref);
-  const { lang } = useLang();
-  const info = lang === 'en' ? service.en : service.ar;
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+};
 
-  return (
-    <div
-      ref={ref}
-      className={`reveal${visible ? ' visible' : ''}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <SpotlightCard spotlightColor={service.color}>
-        <div className="service-num">{service.num}</div>
-        <div className="service-name">{info.name}</div>
-        <div className="service-desc">{info.desc}</div>
-      </SpotlightCard>
-    </div>
-  );
-}
+const cardVariants = {
+  hidden: { opacity: 0, y: 32 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] } },
+};
 
 export default function Services() {
   const { lang } = useLang();
-  const ref = useRef(null);
-  const visible = useReveal(ref);
 
   return (
     <section className="services" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <span className={`section-label reveal${visible ? ' visible' : ''}`} ref={ref}>
+      <motion.span
+        className="section-label"
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.5 }}
+      >
         {t(lang, '// What We Do', '// ما نقدمه')}
-      </span>
-      <h2 className="section-heading">
+      </motion.span>
+      <motion.h2
+        className="section-heading"
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.4 }}
+        transition={{ duration: 0.55, delay: 0.08 }}
+      >
         {t(lang, 'Care for every smile in the family.', 'رعاية لكل ابتسامة في العائلة.')}
-      </h2>
-      <div className="services-grid">
-        {SERVICES.map((s, i) => (
-          <ServiceCard key={s.num} service={s} delay={i * 80} />
-        ))}
-      </div>
+      </motion.h2>
+
+      <motion.div
+        className="services-grid"
+        variants={gridVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.15 }}
+      >
+        {SERVICES.map((s) => {
+          const info = lang === 'en' ? s.en : s.ar;
+          return (
+            <motion.div key={s.num} variants={cardVariants} whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
+              <SpotlightCard spotlightColor={s.color}>
+                <div className="service-num">{s.num}</div>
+                <div className="service-name">{info.name}</div>
+                <div className="service-desc">{info.desc}</div>
+              </SpotlightCard>
+            </motion.div>
+          );
+        })}
+      </motion.div>
     </section>
   );
 }

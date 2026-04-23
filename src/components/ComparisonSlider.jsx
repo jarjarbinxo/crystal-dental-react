@@ -1,15 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { motion } from 'motion/react';
 import { useLang, t } from '../lang';
-import { useReveal } from '../hooks/useReveal';
 
 export default function ComparisonSlider() {
   const { lang } = useLang();
   const isAr = lang === 'ar';
-  const compRef  = useRef(null);
-  const wrapRef  = useRef(null);
+  const compRef   = useRef(null);
+  const wrapRef   = useRef(null);
   const handleRef = useRef(null);
-  const sectionRef = useRef(null);
-  const visible = useReveal(sectionRef);
 
   const dragging = useRef(false);
   const target   = useRef(50);
@@ -64,21 +62,46 @@ export default function ComparisonSlider() {
   }, []);
 
   return (
-    <section className="comparison-section" dir={isAr ? 'rtl' : 'ltr'} ref={sectionRef}>
-      <span className={`section-label reveal${visible ? ' visible' : ''}`}>
+    <section className="comparison-section" dir={isAr ? 'rtl' : 'ltr'}>
+      <motion.span
+        className="section-label"
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.5 }}
+      >
         {t(lang, '// Teeth Whitening', '// تبييض الأسنان')}
-      </span>
-      <h2 className={`section-heading reveal${visible ? ' visible' : ''}`} style={{ transitionDelay: '80ms' }}>
+      </motion.span>
+      <motion.h2
+        className="section-heading"
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.4 }}
+        transition={{ duration: 0.55, delay: 0.08 }}
+      >
         {t(lang, 'See the transformation.', 'شاهد التحول.')}
-      </h2>
-      <p className={`hero-sub reveal${visible ? ' visible' : ''}`} style={{ maxWidth: 440, marginBottom: 40, transitionDelay: '160ms' }}>
+      </motion.h2>
+      <motion.p
+        className="hero-sub"
+        style={{ maxWidth: 440, marginBottom: 40 }}
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.4 }}
+        transition={{ duration: 0.55, delay: 0.16 }}
+      >
         {t(lang,
           'Drag the slider to see the difference professional whitening makes.',
           'اسحب المنزلق لترى الفرق الذي يحدثه التبييض الاحترافي.'
         )}
-      </p>
+      </motion.p>
 
-      <div className={`comparison-wrap reveal${visible ? ' visible' : ''}`} style={{ transitionDelay: '220ms' }}>
+      <motion.div
+        className="comparison-wrap"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.65, delay: 0.22 }}
+      >
         <div className="comparison-container" ref={compRef}>
           <img className="comp-before" src="/before-teeth.jpg" alt="Before whitening" draggable="false"/>
           <div className="comp-after-wrap" ref={wrapRef}>
@@ -109,7 +132,7 @@ export default function ComparisonSlider() {
             <span className="comp-dot after" />
           </span>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

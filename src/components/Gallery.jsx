@@ -1,6 +1,5 @@
-import { useRef } from 'react';
+import { motion } from 'motion/react';
 import { useLang, t } from '../lang';
-import { useReveal } from '../hooks/useReveal';
 
 // Distribute real clinic images across 3 columns
 const COL1 = [
@@ -52,18 +51,29 @@ function GalleryCol({ images, reverse, speed }) {
 
 export default function Gallery() {
   const { lang } = useLang();
-  const ref = useRef(null);
-  const visible = useReveal(ref);
 
   return (
     <section className="gallery-section">
-      <div className="gallery-header" ref={ref}>
-        <span className={`section-label reveal${visible ? ' visible' : ''}`}>
+      <div className="gallery-header">
+        <motion.span
+          className="section-label"
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.5 }}
+        >
           {t(lang, '// Our Space', '// مساحتنا')}
-        </span>
-        <h2 className={`section-heading reveal${visible ? ' visible' : ''}`} style={{ transitionDelay: '80ms', marginBottom: 0 }}>
+        </motion.span>
+        <motion.h2
+          className="section-heading"
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.55, delay: 0.08 }}
+          style={{ marginBottom: 0 }}
+        >
           {t(lang, 'Step inside.', 'ادخل وانظر.')}
-        </h2>
+        </motion.h2>
       </div>
 
       <div className="gcol-grid">

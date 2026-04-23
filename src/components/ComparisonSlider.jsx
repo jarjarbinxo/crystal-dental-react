@@ -111,7 +111,6 @@ export default function ComparisonSlider() {
               src="/before-teeth.jpg"
               alt="Before whitening"
               draggable="false"
-              style={{ width: compRef.current?.offsetWidth || '100%' }}
             />
           </div>
           <div className="comp-handle" ref={handleRef}>
